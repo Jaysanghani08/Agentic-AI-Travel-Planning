@@ -11,10 +11,12 @@ dependencies = [
     "folium",
     "streamlit-folium",
     "python-dotenv",
+    "reportlab",
 ]
 
 [project.scripts]
 travel_agent_system = "travel_agent_system.main:main"
+run_crew = "travel_agent_system.run_crew:main"
 
 [build-system]
 requires = ["hatchling"]

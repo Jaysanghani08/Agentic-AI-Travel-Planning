@@ -1,32 +1,78 @@
-# Travel Agent System - Task definitions (placeholder for sequential workflow)
-# Variables {destination}, {style}, {budget} are filled from crew.kickoff(inputs={...})
+# Travel Agent System - Collaborative task definitions
+# Variables: {user_input}, {destination}, {style}, {budget} from crew.kickoff(inputs={...})
 
-scout_research:
+intent_analysis:
   description: >
-    Research local activities and hidden gems in {destination} for a {style} traveler.
-    Focus on authentic, non-touristy experiences from Reddit and travel blogs.
+    Parse the raw input "{user_input}" to extract structured travel parameters:
+    - Budget (amount and currency, or range).
+    - Travel style (e.g., luxury, budget, culture, food, adventure).
+    - Travel dates (exact or relative). Normalize relative phrases like "next weekend"
+    to concrete dates (e.g., "next weekend" -> the upcoming Saturday–Sunday with actual dates).
+    Output a clear, structured summary of budget, style, and normalized dates.
   expected_output: >
-    A curated list of local activities and hidden gems with brief descriptions and sources.
+    A structured summary with: (1) budget (amount and currency), (2) travel style,
+    (3) normalized travel dates (concrete dates when possible). Include a "reasoning"
+    field explaining how you interpreted ambiguous terms (e.g., how "next weekend"
+    was resolved) and any assumptions made.
+  agent: orchestrator
+
+research_discovery:
+  description: >
+    Use your expertise to find 3–5 local activities and "insider tips" for {destination}
+    that match the traveler's style. Focus on authentic, non-touristy experiences
+    (e.g., from Reddit, local blogs). For each activity or tip, provide a brief
+    description and source. Output MUST be a shortlist formatted for human approval—
+    do not proceed as if approved; present the shortlist clearly so a human can
+    approve or reject items before logistics are booked.
+    Include a "reasoning" field explaining why these activities were chosen and
+    how they align with the traveler's style and destination.
+  expected_output: >
+    A shortlist of 3–5 activities and insider tips for {destination}, each with
+    name, description, and source. Format suitable for human approval (e.g., numbered
+    list with clear accept/skip hooks). Include a "reasoning" field: why these
+    activities were selected and how they fit the traveler's profile.
   agent: scout
 
-logistician_fetch:
+logistics_sourcing:
   description: >
-    Fetch real-time flight and hotel options for {destination} with direct booking links.
+    The traveler has approved (or given feedback on) the following activity shortlist from the Scout:
+
+    {shortlist_from_scout}
+
+    Approval or feedback from the traveler: {human_approval}
+
+    Using the above shortlist and trip context, find live flight and hotel options for the trip with direct booking URLs.
+    Use only real, verifiable APIs or sources—do not invent or hallucinate links.
+    Every URL must be a genuine booking link (e.g., from Amadeus or official
+    airline/hotel sites). If a direct URL is unavailable for an option, state
+    "URL not available" rather than fabricating one.
+    Include a "reasoning" field explaining how you selected options (e.g., best
+    price vs. convenience, layover trade-offs) and why each link is reliable.
   expected_output: >
-    Flight and hotel options with prices and booking links.
+    Flight and hotel options with: provider name, price, key details (dates, times,
+    class/room type), and direct booking URLs only when verifiable. No hallucinated
+    links. Include a "reasoning" field explaining selection criteria and link
+    verification (e.g., saving cost vs. time, why this route was chosen).
   agent: logistician
 
-auditor_validate:
+audit_optimization:
   description: >
-    Validate that the proposed itinerary fits within the total budget of {budget}
-    and has no schedule conflicts. Balance cost vs. quality.
+    The approved shortlist and traveler feedback are already incorporated in the logistics plan below.
+    Verify that the total cost of the proposed itinerary is under the budget of
+    {budget} and that travel times (flights, transfers, check-in/out) are realistic.
+    Cross-check for schedule conflicts and suggest small optimizations if needed.
+    Include a "reasoning" field: explain why specific choices were made (e.g.,
+    saving cost vs. time, trade-offs between convenience and budget).
+    Edge case: If the budget of {budget} is mathematically impossible for the
+    requested destination, dates, or stay type, do NOT fail silently. Provide a
+    clear notification that the budget is insufficient and suggest specific
+    alternatives (e.g., different dates, shorter stay, different accommodation
+    type, or nearby cheaper destination) instead of forcing an invalid plan.
   expected_output: >
-    Validation report: budget check, schedule feasibility, and any recommended adjustments.
+    An audit report with: (1) total cost vs. budget (pass/fail), (2) travel time
+    realism check, (3) any schedule conflicts or optimization suggestions,
+    (4) a "reasoning" field explaining why this specific route/plan was chosen
+    (e.g., saving cost vs. time). If budget is impossible: a clear notification
+    plus concrete alternative suggestions (dates, stay type, or destination)—
+    no silent failure.
   agent: auditor
-
-orchestrator_review:
-  description: >
-    Review the full plan and manage workflow; flag any items needing human approval.
-  expected_output: >
-    Final summary and list of items requiring human approval (if any).
-  agent: orchestrator

@@ -45,26 +45,47 @@ class TravelAgentSystemCrew:
         )
 
     @task
-    def scout_research(self) -> Task:
-        return Task(config=self.tasks_config["scout_research"])  # type: ignore[index]
+    def intent_analysis(self) -> Task:
+        return Task(config=self.tasks_config["intent_analysis"])  # type: ignore[index]
 
     @task
-    def logistician_fetch(self) -> Task:
-        return Task(config=self.tasks_config["logistician_fetch"])  # type: ignore[index]
+    def research_discovery(self) -> Task:
+        return Task(
+            config=self.tasks_config["research_discovery"],  # type: ignore[index]
+            human_input=False,  # HITL is handled in the UI; no terminal prompt
+        )
 
     @task
-    def auditor_validate(self) -> Task:
-        return Task(config=self.tasks_config["auditor_validate"])  # type: ignore[index]
+    def logistics_sourcing(self) -> Task:
+        return Task(config=self.tasks_config["logistics_sourcing"])  # type: ignore[index]
 
     @task
-    def orchestrator_review(self) -> Task:
-        return Task(config=self.tasks_config["orchestrator_review"])  # type: ignore[index]
+    def audit_optimization(self) -> Task:
+        return Task(config=self.tasks_config["audit_optimization"])  # type: ignore[index]
 
     @crew
     def crew(self) -> Crew:
         return Crew(
             agents=self.agents,
             tasks=self.tasks,
+            process=Process.sequential,
+            verbose=True,
+        )
+
+    def scout_crew(self) -> Crew:
+        """Run only intent_analysis + research_discovery to get shortlist for UI approval."""
+        return Crew(
+            agents=[self.orchestrator(), self.scout()],
+            tasks=[self.intent_analysis(), self.research_discovery()],
+            process=Process.sequential,
+            verbose=True,
+        )
+
+    def logistics_crew(self) -> Crew:
+        """Run logistics + audit after user approves shortlist in UI. Needs shortlist_from_scout and human_approval in kickoff inputs."""
+        return Crew(
+            agents=[self.logistician(), self.auditor()],
+            tasks=[self.logistics_sourcing(), self.audit_optimization()],
             process=Process.sequential,
             verbose=True,
         )

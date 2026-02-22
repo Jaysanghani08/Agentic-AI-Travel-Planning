@@ -41,5 +41,7 @@ Thumbs.db
 *.log
 logs.txt
 
+.env
+
 # Knowledge / local data (optional)
 # knowledge/*.pdf

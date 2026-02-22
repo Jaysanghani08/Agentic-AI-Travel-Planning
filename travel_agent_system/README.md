@@ -6,7 +6,7 @@ Multi-agent AI Travel System built with CrewAI and Streamlit.
 
 1. Copy `.env.example` to `.env` and fill in your API keys.
 2. Install dependencies (from project root): `pip install -e .` or `crewai install` (if you have the CrewAI CLI).
-3. Run: `crewai run` or `python -m travel_agent_system.main`.
+3. Run the Streamlit UI: `streamlit run src/travel_agent_system/main.py` (from project root). Or run the crew only: `crewai run` / `python -m travel_agent_system.main`.
 
 ## Agents
 
