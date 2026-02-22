@@ -1,0 +1,1 @@
+Always use typed Python (type hints). Prefer CrewAI YAML configuration over hardcoded agent strings.

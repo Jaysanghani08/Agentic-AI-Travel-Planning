@@ -1,0 +1,32 @@
+# Travel Agent System - Task definitions (placeholder for sequential workflow)
+# Variables {destination}, {style}, {budget} are filled from crew.kickoff(inputs={...})
+
+scout_research:
+  description: >
+    Research local activities and hidden gems in {destination} for a {style} traveler.
+    Focus on authentic, non-touristy experiences from Reddit and travel blogs.
+  expected_output: >
+    A curated list of local activities and hidden gems with brief descriptions and sources.
+  agent: scout
+
+logistician_fetch:
+  description: >
+    Fetch real-time flight and hotel options for {destination} with direct booking links.
+  expected_output: >
+    Flight and hotel options with prices and booking links.
+  agent: logistician
+
+auditor_validate:
+  description: >
+    Validate that the proposed itinerary fits within the total budget of {budget}
+    and has no schedule conflicts. Balance cost vs. quality.
+  expected_output: >
+    Validation report: budget check, schedule feasibility, and any recommended adjustments.
+  agent: auditor
+
+orchestrator_review:
+  description: >
+    Review the full plan and manage workflow; flag any items needing human approval.
+  expected_output: >
+    Final summary and list of items requiring human approval (if any).
+  agent: orchestrator
