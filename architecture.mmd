@@ -1,0 +1,65 @@
+%% Travel Agent System - High-Level Architecture
+%% Mermaid diagram: main components only. Render in any Mermaid-compatible viewer.
+
+flowchart TB
+    subgraph User["User"]
+        U[Travel Request]
+    end
+
+    subgraph Entry["Entry"]
+        CLI[CLI Runner\nrun_crew]
+    end
+
+    subgraph Pipeline["Agent Pipeline"]
+        direction TB
+        IE[Intent Extraction\nOrchestrator]
+        SC[Scout\nResearch & Shortlist]
+        HITL[Human Approval]
+        LG[Logistician\nFlights & Hotels]
+        AU[Auditor\nBudget & Feasibility]
+        IT[Itinerary\nOrchestrator]
+    end
+
+    subgraph Tools["Tools"]
+        FT[Flight Search]
+        HT[Hotel Search]
+    end
+
+    subgraph External["External"]
+        AM[Amadeus API]
+    end
+
+    subgraph Config["Configuration"]
+        AY[agents.yaml]
+        TY[tasks.yaml]
+        CX[constants]
+    end
+
+    U --> CLI
+    CLI --> IE
+    IE --> SC
+    SC --> HITL
+    HITL --> LG
+    LG --> AU
+    AU --> IT
+    IT --> OUT[Final Itinerary]
+
+    LG --> FT
+    LG --> HT
+    FT --> AM
+    HT --> AM
+
+    AY -.-> IE
+    AY -.-> SC
+    AY -.-> LG
+    AY -.-> AU
+    TY -.-> Pipeline
+    CX -.-> FT
+    CX -.-> HT
+
+    style User fill:#e8f4f8
+    style Entry fill:#f0f4f0
+    style Pipeline fill:#f8f0f8
+    style Tools fill:#fff8e8
+    style External fill:#f0f0f0
+    style Config fill:#f5f5f5
