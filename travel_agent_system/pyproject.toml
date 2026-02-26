@@ -1,21 +1,17 @@
 [project]
 name = "travel_agent_system"
 version = "0.1.0"
-description = "Multi-agent AI Travel System using CrewAI and Streamlit"
+description = "Multi-agent AI Travel System using CrewAI (CLI)"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
 dependencies = [
     "crewai[tools]",
     "amadeus",
-    "streamlit",
-    "folium",
-    "streamlit-folium",
     "python-dotenv",
-    "reportlab",
 ]
 
 [project.scripts]
-travel_agent_system = "travel_agent_system.main:main"
+travel_agent_system = "travel_agent_system.run_crew:main"
 run_crew = "travel_agent_system.run_crew:main"
 
 [build-system]
