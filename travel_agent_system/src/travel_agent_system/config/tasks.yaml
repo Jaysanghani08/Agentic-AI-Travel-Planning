@@ -1,24 +1,30 @@
 # Travel Agent System - Collaborative task definitions
 # Variables from crew.kickoff(inputs={...}):
-# {user_input}, {origin}, {destination}, {travel_dates}, {days}, {style}, {budget}, {interests}
-# {shortlist_from_scout}, {human_approval}, {previous_final_plan}
+# {user_input}, {origin}, {destination}, {start_date}, {end_date}, {travel_dates}, {days}, {nights},
+# {num_people}, {style}, {budget}, {currency}, {interests}
+# For audit_only_crew: {logistics_plan_from_previous_step}
+# For itinerary_crew: {logistics_plan_from_previous_step}, {audit_report_from_previous_step}
 
 intent_analysis:
   description: >
     Parse the raw input "{user_input}" to extract structured travel parameters:
     - Origin (city or airport code, when present).
     - Destination (city or airport code, when present).
+    - Start date and end date (ISO format YYYY-MM-DD when present).
     - Travel dates (exact or relative). Normalize relative phrases like "next weekend"
       to concrete dates when possible.
     - Number of days.
-    - Budget (amount and currency, or range).
+    - Number of people.
+    - Budget per person (amount and currency, or range).
     - Travel style (e.g., luxury, budget, culture, food, adventure).
     - Interests.
     Do not invent missing values. If a field is not present in input, return it as null.
   expected_output: >
     A strict JSON object only (no prose, no markdown) with keys:
-    "origin", "destination", "start_or_dates", "days", "budget", "style", "interests",
-    "reasoning". "budget" can be a string or an object with "amount" and "currency".
+    "origin", "destination", "start_date", "end_date", "start_or_dates", "days", "num_people",
+    "budget", "style", "interests", "reasoning".
+    "start_date" and "end_date" are ISO date strings (YYYY-MM-DD) when present.
+    "budget" can be a string or an object with "amount" and "currency" (per person).
     Use null for unknown values.
   agent: orchestrator
 
@@ -33,9 +39,12 @@ research_discovery:
     Trip context for selection:
     - Origin: {origin}
     - Destination: {destination}
+    - Start date: {start_date}
+    - End date: {end_date}
     - Travel dates/start: {travel_dates}
     - Number of days: {days}
-    - Budget: {budget}
+    - Number of people: {num_people}
+    - Budget (per person): {budget}
     - Style: {style}
     - Interests: {interests}
     Include a "reasoning" field explaining why these activities were chosen and
@@ -59,47 +68,79 @@ logistics_sourcing:
     Trip context:
     - Origin: {origin}
     - Destination: {destination}
+    - Start date: {start_date}
+    - End date: {end_date}
     - Travel dates/start: {travel_dates}
     - Number of days: {days}
-    - Budget: {budget}
+    - Number of nights: {nights}
+    - Number of people: {num_people}
+    - Budget (per person): {budget}
+    - Currency: {currency}
     - Style: {style}
     - Interests: {interests}
 
     If {previous_final_plan} is present, treat {human_approval} as a refinement request
     and revise the previous itinerary directly instead of restarting from scratch.
-    Using the above shortlist and trip context, find live flight and hotel options for the trip with direct booking URLs.
+
+    Note: Budget is per person; total trip budget = budget × num_people. Use total budget when comparing costs.
+    Total accommodation nights across the trip must equal {nights}.
+
+    TOOL CALLING RULES (mandatory):
+    1. City-to-IATA: pass IATA codes to all tools (tools also auto-resolve city names, but prefer codes).
+       Common mappings: Delhi=DEL, Mumbai=BOM, Ahmedabad=AMD, Goa=GOI, Bangalore=BLR, Chennai=MAA,
+       Hyderabad=HYD, Kolkata=CCU, Kochi=COK, Pune=PNQ, Jaipur=JAI, Dehradun=DED.
+    2. currency: ALWAYS pass currency='{currency}' to every flight_search_tool and hotel_search_tool call.
+    3. adults: pass num_people ({num_people}) as the adults parameter in both flight and hotel tool calls.
+    4. The flight tool output contains BOTH "Per-person" and "Total for N traveler(s)" prices clearly
+       labeled. Read those labels carefully — do NOT multiply the total again by num_people.
+    5. hotel_search_tool: ALWAYS pass check_in='{start_date}' and check_out='{end_date}' to obtain
+       live nightly rates. Without these the tool cannot retrieve pricing.
+    6. Search for outbound flight (origin → destination on {start_date}) and return flight
+       (destination → origin on {end_date}).
+
+    Using the above shortlist and trip context, find live flight and hotel options with direct booking URLs.
     Use only real, verifiable APIs or sources—do not invent or hallucinate links.
-    Every URL must be a genuine booking link (e.g., from Amadeus or official
-    airline/hotel sites). If a direct URL is unavailable for an option, state
-    "URL not available" rather than fabricating one.
-    Include a "reasoning" field explaining how you selected options (e.g., best
-    price vs. convenience, layover trade-offs) and why each link is reliable.
+    Every URL must be a genuine booking link. If a direct URL is unavailable, state "URL not available".
+    Include a "reasoning" field explaining how you selected options and why each link is reliable.
   expected_output: >
-    Flight and hotel options with: provider name, price, key details (dates, times,
-    class/room type), and direct booking URLs only when verifiable. No hallucinated
-    links. Include a "reasoning" field explaining selection criteria and link
-    verification (e.g., saving cost vs. time, why this route was chosen).
+    A structured prose summary with clearly labelled sections:
+    OUTBOUND FLIGHT: provider, price per person, total price for group ({num_people} travelers), booking URL.
+    RETURN FLIGHT: provider, price per person, total price for group ({num_people} travelers), booking URL.
+    ACCOMMODATION: hotel name, lowest nightly rate in {currency} (if available), total nights ({nights}), booking URL.
+    REASONING: why these options were selected (cost vs. convenience, trade-offs).
+    All prices in {currency}. All booking URLs must be real and verifiable. State "URL not available" if absent.
   agent: logistician
 
 audit_optimization:
   description: >
-    The approved shortlist and traveler feedback are already incorporated in the logistics plan below.
-    Previous final itinerary (if available): {previous_final_plan}
+    The logistics plan from the logistician:
+
+    {logistics_plan_from_previous_step}
+
+    The approved shortlist and traveler feedback are already incorporated in the logistics plan above.
     Trip context:
     - Origin: {origin}
     - Destination: {destination}
+    - Start date: {start_date}
+    - End date: {end_date}
     - Travel dates/start: {travel_dates}
     - Number of days: {days}
+    - Number of nights: {nights}
+    - Number of people: {num_people}
+    - Budget (per person): {budget}
+    - Currency: {currency}
     - Style: {style}
     - Interests: {interests}
-    If a previous final itinerary exists, verify the revised plan against the requested
-    changes in {human_approval} and keep unchanged parts stable unless a change is needed.
-    Verify that the total cost of the proposed itinerary is under the budget of
-    {budget} and that travel times (flights, transfers, check-in/out) are realistic.
+    Note: The flight tool output labels prices as "Per-person" and "Total for N traveler(s)".
+    Use the labeled values directly — do NOT multiply the total-for-group price by num_people again.
+    Budget is per person; total trip budget = budget × num_people. Verify that the total cost of the proposed
+    itinerary is under the total budget (budget × num_people) and that travel times (flights, transfers, check-in/out)
+    are realistic.
+    Verify that total accommodation nights equal {nights}.
     Cross-check for schedule conflicts and suggest small optimizations if needed.
     Include a "reasoning" field: explain why specific choices were made (e.g.,
     saving cost vs. time, trade-offs between convenience and budget).
-    Edge case: If the budget of {budget} is mathematically impossible for the
+    Edge case: If the total budget (budget × num_people) is mathematically impossible for the
     requested destination, dates, or stay type, do NOT fail silently. Provide a
     clear notification that the budget is insufficient and suggest specific
     alternatives (e.g., different dates, shorter stay, different accommodation
@@ -111,4 +152,45 @@ audit_optimization:
     (e.g., saving cost vs. time). If budget is impossible: a clear notification
     plus concrete alternative suggestions (dates, stay type, or destination)—
     no silent failure.
+    Include all booking URLs from the logistics plan in your report so the traveler has them in one place.
   agent: auditor
+
+itinerary_generation:
+  description: >
+    You are assembling the final travel itinerary for the traveler.
+    Use all the information below to produce a clear, day-by-day travel plan.
+
+    APPROVED ACTIVITIES (from scout):
+    {shortlist_from_scout}
+
+    LOGISTICS (flights and hotels):
+    {logistics_plan_from_previous_step}
+
+    AUDIT NOTES (budget, conflicts, optimizations):
+    {audit_report_from_previous_step}
+
+    Trip context:
+    - Origin: {origin}
+    - Destination: {destination}
+    - Start date: {start_date}
+    - End date: {end_date}
+    - Number of days: {days}
+    - Number of nights: {nights}
+    - Number of people: {num_people}
+    - Budget (per person): {budget}
+    - Currency: {currency}
+    - Style: {style}
+    - Interests: {interests}
+
+    Write the itinerary as a day-by-day plan (Day 1, Day 2, ...) covering:
+    - Outbound flight details and booking link on Day 1.
+    - Each night's accommodation with hotel search/booking link.
+    - Approved activities distributed across the days.
+    - Return flight details and booking link on the last day.
+    - A brief cost summary referencing the audit.
+    Do NOT invent any URLs. Use only the booking links from the logistics plan.
+  expected_output: >
+    A complete day-by-day travel itinerary in plain prose. Each day should list
+    the date, activities, accommodation, and any travel. Include all booking URLs
+    from the logistics plan. End with a brief budget summary and any audit warnings.
+  agent: orchestrator

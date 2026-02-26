@@ -5,6 +5,8 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
 
+from travel_agent_system.tools.amadeus_tools import flight_search_tool, hotel_search_tool
+
 
 @CrewBase
 class TravelAgentSystemCrew:
@@ -28,6 +30,7 @@ class TravelAgentSystemCrew:
         return Agent(
             config=self.agents_config["logistician"],  # type: ignore[index]
             verbose=True,
+            tools=[flight_search_tool, hotel_search_tool],
         )
 
     @agent
@@ -63,6 +66,10 @@ class TravelAgentSystemCrew:
     def audit_optimization(self) -> Task:
         return Task(config=self.tasks_config["audit_optimization"])  # type: ignore[index]
 
+    @task
+    def itinerary_generation(self) -> Task:
+        return Task(config=self.tasks_config["itinerary_generation"])  # type: ignore[index]
+
     @crew
     def crew(self) -> Crew:
         return Crew(
@@ -73,19 +80,37 @@ class TravelAgentSystemCrew:
         )
 
     def scout_crew(self) -> Crew:
-        """Run only intent_analysis + research_discovery to get shortlist for UI approval."""
+        """Run only research_discovery; trip context is passed via kickoff inputs."""
         return Crew(
-            agents=[self.orchestrator(), self.scout()],
-            tasks=[self.intent_analysis(), self.research_discovery()],
+            agents=[self.scout()],
+            tasks=[self.research_discovery()],
             process=Process.sequential,
             verbose=True,
         )
 
-    def logistics_crew(self) -> Crew:
-        """Run logistics + audit after user approves shortlist in UI. Needs shortlist_from_scout and human_approval in kickoff inputs."""
+    def logistics_only_crew(self, verbose: bool = True) -> Crew:
+        """Run only logistics_sourcing so the logistics plan (with booking links) can be captured and shown to the user."""
         return Crew(
-            agents=[self.logistician(), self.auditor()],
-            tasks=[self.logistics_sourcing(), self.audit_optimization()],
+            agents=[self.logistician()],
+            tasks=[self.logistics_sourcing()],
             process=Process.sequential,
-            verbose=True,
+            verbose=verbose,
+        )
+
+    def audit_only_crew(self, verbose: bool = True) -> Crew:
+        """Run only audit_optimization; requires logistics_plan_from_previous_step in kickoff inputs."""
+        return Crew(
+            agents=[self.auditor()],
+            tasks=[self.audit_optimization()],
+            process=Process.sequential,
+            verbose=verbose,
+        )
+
+    def itinerary_crew(self, verbose: bool = True) -> Crew:
+        """Synthesize activities, logistics, and audit into a day-by-day itinerary."""
+        return Crew(
+            agents=[self.orchestrator()],
+            tasks=[self.itinerary_generation()],
+            process=Process.sequential,
+            verbose=verbose,
         )
