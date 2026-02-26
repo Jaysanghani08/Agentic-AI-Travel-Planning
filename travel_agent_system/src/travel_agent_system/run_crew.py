@@ -171,6 +171,117 @@ def _collect_missing_fields(fields: dict[str, str]) -> None:
                 break
 
 
+def _prompt_field_value(field_name: str) -> str:
+    while True:
+        value = input(f"{HITL_PROMPTS[field_name]}").strip()
+        if field_name == "days":
+            parsed = _to_int_days(value)
+            if parsed is None:
+                print("Please enter a valid positive number for days.")
+                continue
+            return str(parsed)
+        if _is_missing_value(value):
+            print("This field is required.")
+            continue
+        return value
+
+
+def _run_scout_cycle(
+    crew: Any,
+    raw_prompt: str,
+    fields: dict[str, str],
+) -> str:
+    user_input = _build_user_input(raw_prompt, fields)
+
+    print("\nRunning Scout phase...")
+    scout_result = crew.scout_crew().kickoff(
+        inputs={
+            "user_input": user_input,
+            "origin": fields["origin"],
+            "destination": fields["destination"],
+            "travel_dates": fields["start_or_dates"],
+            "days": fields["days"],
+            "style": fields["style"],
+            "budget": fields["budget"],
+            "interests": fields["interests"],
+        }
+    )
+    shortlist_output = _raw_to_text(scout_result)
+    print("\n--- Scout shortlist ---")
+    print(shortlist_output)
+    return shortlist_output
+
+
+def _run_logistics_cycle(
+    crew: Any,
+    fields: dict[str, str],
+    shortlist_output: str,
+    approval_feedback: str,
+    previous_final_plan: str = "",
+) -> str:
+    print("\nRunning Logistics + Audit phase...")
+    final_result = crew.logistics_crew().kickoff(
+        inputs={
+            "shortlist_from_scout": shortlist_output,
+            "human_approval": approval_feedback,
+            "previous_final_plan": previous_final_plan,
+            "origin": fields["origin"],
+            "destination": fields["destination"],
+            "travel_dates": fields["start_or_dates"],
+            "days": fields["days"],
+            "style": fields["style"],
+            "budget": fields["budget"],
+            "interests": fields["interests"],
+        }
+    )
+
+    final_output = _raw_to_text(final_result)
+    print("\n--- Final itinerary output ---")
+    print(final_output)
+    return final_output
+
+
+def _post_plan_action() -> str:
+    while True:
+        action = input(
+            "\nNext action? (refine/update/quit): "
+        ).strip().lower()
+        if action in {"refine", "update", "quit"}:
+            return action
+        print("Please type 'refine', 'update', or 'quit'.")
+
+
+def _collect_modifications(fields: dict[str, str]) -> bool:
+    print("\nCurrent trip details:")
+    for key in REQUIRED_FIELDS:
+        print(f"- {key}: {fields.get(key, '')}")
+
+    print("\nEnter fields to modify (comma-separated), or press Enter to keep all:")
+    editable = ", ".join(REQUIRED_FIELDS)
+    selected = input(f"Fields ({editable}): ").strip()
+    if not selected:
+        return False
+
+    selected_fields = [item.strip().lower() for item in selected.split(",") if item.strip()]
+    valid_fields = {field for field in REQUIRED_FIELDS}
+    changed = False
+    for field_name in selected_fields:
+        if field_name not in valid_fields:
+            print(f"Skipping unknown field: {field_name}")
+            continue
+        fields[field_name] = _prompt_field_value(field_name)
+        changed = True
+    return changed
+
+
+def _collect_feedback(prompt_text: str) -> str:
+    feedback = input(prompt_text).strip()
+    while not feedback:
+        print("This input is required.")
+        feedback = input(prompt_text).strip()
+    return feedback
+
+
 def main() -> None:
     from travel_agent_system.crew import TravelAgentSystemCrew
 
@@ -192,51 +303,50 @@ def main() -> None:
     fields = _normalize_extracted_fields(extracted_json)
 
     _collect_missing_fields(fields)
-    user_input = _build_user_input(raw_prompt, fields)
-
-    print("\nRunning Scout phase...")
-    scout_result = crew.scout_crew().kickoff(
-        inputs={
-            "user_input": user_input,
-            "origin": fields["origin"],
-            "destination": fields["destination"],
-            "travel_dates": fields["start_or_dates"],
-            "days": fields["days"],
-            "style": fields["style"],
-            "budget": fields["budget"],
-            "interests": fields["interests"],
-        }
-    )
-    shortlist_output = _raw_to_text(scout_result)
-    print("\n--- Scout shortlist ---")
-    print(shortlist_output)
-
-    approval = input(
+    shortlist_output = _run_scout_cycle(crew=crew, raw_prompt=raw_prompt, fields=fields)
+    approval = _collect_feedback(
         "\nEnter your approval or feedback for the shortlist (required before logistics): "
-    ).strip()
-    while not approval:
-        print("Approval/feedback is required.")
-        approval = input(
-            "Enter your approval or feedback for the shortlist (required before logistics): "
-        ).strip()
-
-    print("\nRunning Logistics + Audit phase...")
-    final_result = crew.logistics_crew().kickoff(
-        inputs={
-            "shortlist_from_scout": shortlist_output,
-            "human_approval": approval,
-            "origin": fields["origin"],
-            "destination": fields["destination"],
-            "travel_dates": fields["start_or_dates"],
-            "days": fields["days"],
-            "style": fields["style"],
-            "budget": fields["budget"],
-            "interests": fields["interests"],
-        }
+    )
+    final_output = _run_logistics_cycle(
+        crew=crew,
+        fields=fields,
+        shortlist_output=shortlist_output,
+        approval_feedback=approval,
     )
 
-    print("\n--- Final itinerary output ---")
-    print(_raw_to_text(final_result))
+    while True:
+        action = _post_plan_action()
+        if action == "quit":
+            print("Exiting travel planner.")
+            return
+
+        if action == "refine":
+            refinement = _collect_feedback(
+                "What would you like to change in the current itinerary? "
+            )
+            final_output = _run_logistics_cycle(
+                crew=crew,
+                fields=fields,
+                shortlist_output=shortlist_output,
+                approval_feedback=refinement,
+                previous_final_plan=final_output,
+            )
+            continue
+
+        changed = _collect_modifications(fields)
+        if not changed:
+            print("No trip fields changed. Keeping current plan inputs.")
+        _collect_missing_fields(fields)
+        shortlist_output = _run_scout_cycle(crew=crew, raw_prompt=raw_prompt, fields=fields)
+        approval = _collect_feedback(
+            "\nEnter your approval or feedback for the shortlist (required before logistics): "
+        )
+        final_output = _run_logistics_cycle(
+            crew=crew,
+            fields=fields,
+            shortlist_output=shortlist_output,
+            approval_feedback=approval,
+        )
 
 
 if __name__ == "__main__":

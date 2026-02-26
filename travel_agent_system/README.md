@@ -24,6 +24,10 @@ Multi-agent AI Travel System built with CrewAI for CLI usage.
   - interests
 - If any required field is missing, the CLI asks follow-up questions until all are provided.
 - After the scout shortlist is shown, approval/feedback is required before logistics + audit runs.
+- After a final itinerary is generated, you can choose:
+  - `refine`: modify the current itinerary directly (keeps current shortlist and trip inputs).
+  - `update`: change core trip fields, then rerun Scout + Logistics.
+  - `quit`: exit the planner.
 
 ## Agents
 
