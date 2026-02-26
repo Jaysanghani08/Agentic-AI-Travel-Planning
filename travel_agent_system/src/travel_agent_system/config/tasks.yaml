@@ -1,6 +1,7 @@
 # Travel Agent System - Collaborative task definitions
 # Variables from crew.kickoff(inputs={...}):
 # {user_input}, {origin}, {destination}, {travel_dates}, {days}, {style}, {budget}, {interests}
+# {shortlist_from_scout}, {human_approval}, {previous_final_plan}
 
 intent_analysis:
   description: >
@@ -53,6 +54,7 @@ logistics_sourcing:
     {shortlist_from_scout}
 
     Approval or feedback from the traveler: {human_approval}
+    Previous final itinerary (if this is a refinement pass): {previous_final_plan}
 
     Trip context:
     - Origin: {origin}
@@ -63,6 +65,8 @@ logistics_sourcing:
     - Style: {style}
     - Interests: {interests}
 
+    If {previous_final_plan} is present, treat {human_approval} as a refinement request
+    and revise the previous itinerary directly instead of restarting from scratch.
     Using the above shortlist and trip context, find live flight and hotel options for the trip with direct booking URLs.
     Use only real, verifiable APIs or sources—do not invent or hallucinate links.
     Every URL must be a genuine booking link (e.g., from Amadeus or official
@@ -80,6 +84,7 @@ logistics_sourcing:
 audit_optimization:
   description: >
     The approved shortlist and traveler feedback are already incorporated in the logistics plan below.
+    Previous final itinerary (if available): {previous_final_plan}
     Trip context:
     - Origin: {origin}
     - Destination: {destination}
@@ -87,6 +92,8 @@ audit_optimization:
     - Number of days: {days}
     - Style: {style}
     - Interests: {interests}
+    If a previous final itinerary exists, verify the revised plan against the requested
+    changes in {human_approval} and keep unchanged parts stable unless a change is needed.
     Verify that the total cost of the proposed itinerary is under the budget of
     {budget} and that travel times (flights, transfers, check-in/out) are realistic.
     Cross-check for schedule conflicts and suggest small optimizations if needed.
