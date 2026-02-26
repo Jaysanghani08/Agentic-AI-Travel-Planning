@@ -1,19 +1,24 @@
 # Travel Agent System - Collaborative task definitions
-# Variables: {user_input}, {destination}, {style}, {budget} from crew.kickoff(inputs={...})
+# Variables from crew.kickoff(inputs={...}):
+# {user_input}, {origin}, {destination}, {travel_dates}, {days}, {style}, {budget}, {interests}
 
 intent_analysis:
   description: >
     Parse the raw input "{user_input}" to extract structured travel parameters:
+    - Origin (city or airport code, when present).
+    - Destination (city or airport code, when present).
+    - Travel dates (exact or relative). Normalize relative phrases like "next weekend"
+      to concrete dates when possible.
+    - Number of days.
     - Budget (amount and currency, or range).
     - Travel style (e.g., luxury, budget, culture, food, adventure).
-    - Travel dates (exact or relative). Normalize relative phrases like "next weekend"
-    to concrete dates (e.g., "next weekend" -> the upcoming Saturday–Sunday with actual dates).
-    Output a clear, structured summary of budget, style, and normalized dates.
+    - Interests.
+    Do not invent missing values. If a field is not present in input, return it as null.
   expected_output: >
-    A structured summary with: (1) budget (amount and currency), (2) travel style,
-    (3) normalized travel dates (concrete dates when possible). Include a "reasoning"
-    field explaining how you interpreted ambiguous terms (e.g., how "next weekend"
-    was resolved) and any assumptions made.
+    A strict JSON object only (no prose, no markdown) with keys:
+    "origin", "destination", "start_or_dates", "days", "budget", "style", "interests",
+    "reasoning". "budget" can be a string or an object with "amount" and "currency".
+    Use null for unknown values.
   agent: orchestrator
 
 research_discovery:
@@ -24,6 +29,14 @@ research_discovery:
     description and source. Output MUST be a shortlist formatted for human approval—
     do not proceed as if approved; present the shortlist clearly so a human can
     approve or reject items before logistics are booked.
+    Trip context for selection:
+    - Origin: {origin}
+    - Destination: {destination}
+    - Travel dates/start: {travel_dates}
+    - Number of days: {days}
+    - Budget: {budget}
+    - Style: {style}
+    - Interests: {interests}
     Include a "reasoning" field explaining why these activities were chosen and
     how they align with the traveler's style and destination.
   expected_output: >
@@ -40,6 +53,15 @@ logistics_sourcing:
     {shortlist_from_scout}
 
     Approval or feedback from the traveler: {human_approval}
+
+    Trip context:
+    - Origin: {origin}
+    - Destination: {destination}
+    - Travel dates/start: {travel_dates}
+    - Number of days: {days}
+    - Budget: {budget}
+    - Style: {style}
+    - Interests: {interests}
 
     Using the above shortlist and trip context, find live flight and hotel options for the trip with direct booking URLs.
     Use only real, verifiable APIs or sources—do not invent or hallucinate links.
@@ -58,6 +80,13 @@ logistics_sourcing:
 audit_optimization:
   description: >
     The approved shortlist and traveler feedback are already incorporated in the logistics plan below.
+    Trip context:
+    - Origin: {origin}
+    - Destination: {destination}
+    - Travel dates/start: {travel_dates}
+    - Number of days: {days}
+    - Style: {style}
+    - Interests: {interests}
     Verify that the total cost of the proposed itinerary is under the budget of
     {budget} and that travel times (flights, transfers, check-in/out) are realistic.
     Cross-check for schedule conflicts and suggest small optimizations if needed.
