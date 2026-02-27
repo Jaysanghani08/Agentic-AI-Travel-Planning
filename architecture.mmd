@@ -1,5 +1,5 @@
 %% Travel Agent System - High-Level Architecture
-%% Mermaid diagram: main components only. Render in any Mermaid-compatible viewer.
+%% Mermaid diagram: main components and post-itinerary quit/refine loop.
 
 flowchart TB
     subgraph User["User"]
@@ -18,6 +18,13 @@ flowchart TB
         LG[Logistician\nFlights & Hotels]
         AU[Auditor\nBudget & Feasibility]
         IT[Itinerary\nOrchestrator]
+    end
+
+    subgraph PostItinerary["Post-Itinerary Loop"]
+        OUT[Final Itinerary]
+        QuitRefine{Quit or Refine?}
+        RefineInput[Refinement Input]
+        ExitNode[Exit]
     end
 
     subgraph Tools["Tools"]
@@ -42,7 +49,12 @@ flowchart TB
     HITL --> LG
     LG --> AU
     AU --> IT
-    IT --> OUT[Final Itinerary]
+    IT --> OUT
+
+    OUT --> QuitRefine
+    QuitRefine -->|quit| ExitNode
+    QuitRefine -->|refine| RefineInput
+    RefineInput --> LG
 
     LG --> FT
     LG --> HT
@@ -60,6 +72,7 @@ flowchart TB
     style User fill:#e8f4f8
     style Entry fill:#f0f4f0
     style Pipeline fill:#f8f0f8
+    style PostItinerary fill:#e8f8e8
     style Tools fill:#fff8e8
     style External fill:#f0f0f0
     style Config fill:#f5f5f5

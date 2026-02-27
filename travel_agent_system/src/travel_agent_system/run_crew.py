@@ -32,6 +32,14 @@ HITL_PROMPTS = {
     "interests": "Enter interests (comma-separated): ",
 }
 
+# Post-itinerary loop: prompt and accepted choices (quit / refine).
+POST_ITINERARY_PROMPT = "Quit or Refine? (quit / refine): "
+POST_ITINERARY_CHOICE_QUIT = ("quit", "q")
+POST_ITINERARY_CHOICE_REFINE = ("refine", "r")
+POST_ITINERARY_REFINEMENT_PROMPT = "Enter your refinement (what to change): "
+POST_ITINERARY_REFINEMENT_REQUIRED = "Refinement is required. Enter what to change: "
+POST_ITINERARY_INVALID_CHOICE = "Please enter 'quit' or 'refine'."
+
 MISSING_SENTINELS = {"", "none", "null", "n/a", "na", "unknown", "not provided"}
 
 # Keywords that indicate the audit flagged a budget failure.
@@ -566,6 +574,76 @@ def main() -> None:
 
     print("\n--- Your Travel Itinerary ---")
     print(_markdown_to_plain(itinerary_text))
+
+    # Post-itinerary loop: quit or refine (re-run logistics → audit → itinerary only).
+    while True:
+        choice = input("\n" + POST_ITINERARY_PROMPT).strip().lower()
+        if choice in POST_ITINERARY_CHOICE_QUIT:
+            return
+        if choice in POST_ITINERARY_CHOICE_REFINE:
+            refinement = input(POST_ITINERARY_REFINEMENT_PROMPT).strip()
+            while not refinement:
+                refinement = input(POST_ITINERARY_REFINEMENT_REQUIRED).strip()
+
+            logistics_inputs["previous_final_plan"] = itinerary_text
+            logistics_inputs["human_approval"] = refinement
+
+            print("\nRunning Logistics + Audit phase (refinement)...")
+            logistics_result = crew.logistics_only_crew(verbose=False).kickoff(
+                inputs=logistics_inputs
+            )
+            logistics_text = _raw_to_text(logistics_result)
+
+            audit_result = crew.audit_only_crew(verbose=False).kickoff(
+                inputs={
+                    **logistics_inputs,
+                    "logistics_plan_from_previous_step": logistics_text,
+                }
+            )
+            audit_text = _raw_to_text(audit_result)
+
+            print("\n--- Logistics plan ---")
+            print(_markdown_to_plain(logistics_text))
+            print("\n--- Audit ---")
+            print(_markdown_to_plain(audit_text))
+
+            if _audit_suggests_fail(audit_text):
+                print(
+                    "\n⚠  Budget Alert: The audit indicates the estimated trip cost exceeds your budget."
+                )
+                while True:
+                    budget_choice = (
+                        input(
+                            "Would you like to (1) continue and generate the itinerary anyway, "
+                            "or (2) exit to adjust your budget/dates? Enter 1 or 2: "
+                        )
+                        .strip()
+                        .lower()
+                    )
+                    if budget_choice in ("1", "continue", "yes", "y"):
+                        break
+                    if budget_choice in ("2", "exit", "no", "n", "quit"):
+                        print(
+                            "\nExiting. Please re-run with an adjusted budget, shorter dates, "
+                            "or a different destination."
+                        )
+                        return
+                    print("Please enter 1 to continue or 2 to exit.")
+
+            itinerary_result = crew.itinerary_crew(verbose=False).kickoff(
+                inputs={
+                    **logistics_inputs,
+                    "logistics_plan_from_previous_step": logistics_text,
+                    "audit_report_from_previous_step": audit_text,
+                }
+            )
+            itinerary_text = _raw_to_text(itinerary_result)
+
+            print("\n--- Your Travel Itinerary ---")
+            print(_markdown_to_plain(itinerary_text))
+            continue
+
+        print(POST_ITINERARY_INVALID_CHOICE)
 
 
 if __name__ == "__main__":
