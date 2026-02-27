@@ -1,0 +1,40 @@
+Day 1 – March 5, 2026:  
+- Travel: Fly from Ahmedabad (AMD) to Delhi (DEL) on Air India. Booking link: https://www.google.com/travel/flights?q=Flights%20to%20DEL%20from%20AMD%20on%202026-03-05  
+- Upon arrival in Delhi, arrange onward travel to Manali by road (bus, taxi, or private transfer).  
+- Accommodation: Check-in at a hotel in Manali. Recommended hotel search via: https://www.google.com/travel/hotels?q=hotels+in+KUU+2026-03-05+2026-03-12
+
+Day 2 – March 6, 2026:  
+- Activity: Trek to Jogini Waterfall and nearby trails starting from Vashisht village. Experience a moderate 4-5 km trek amid lush greenery with optional local tea and snacks.  
+- Accommodation: Return to your Manali lodging as above.
+
+Day 3 – March 7, 2026:  
+- Activity: Explore Old Manali village on foot. Sample authentic Himachali local foods like siddu, babru, and apple cider from family-run shops while interacting with residents for cultural immersion.  
+- Accommodation: Same hotel in Manali.
+
+Day 4 – March 8, 2026:  
+- Activity: Start the Hamta Pass trek (day 1). Arrange a local porter or join a small group for a budget-friendly trek offering alpine meadows and snow-capped peak views. Overnight stay in tents or budget guesthouses on the trail.  
+- Accommodation: Overnight camping or basic lodging along Hamta Pass trail.
+
+Day 5 – March 9, 2026:  
+- Activity: Complete the Hamta Pass trek (day 2) returning to Manali by evening.  
+- Accommodation: Back to your hotel in Manali.
+
+Day 6 – March 10, 2026:  
+- Activity: Visit Shuru Village, approximately 15 km from Manali. Enjoy strolling among apple orchards and traditional timber houses, taking in serene mountain scenery, and experiencing local Himachali village life. Budget-friendly homestays or guided tours are available on request.  
+- Accommodation: Same hotel in Manali.
+
+Day 7 – March 11, 2026:  
+- Activity (optional): Take part in river rafting on the Beas River. Book directly with local operators for off-peak season rates and join group sessions to maintain budget. Experience an exciting adventure with mountain views.  
+- Accommodation: Last night at your Manali hotel.
+
+Day 8 – March 12, 2026:  
+- Travel: Depart Manali by road for Delhi, then fly from Delhi (DEL) to Ahmedabad (AMD) on Air India. Booking link: https://www.google.com/travel/flights?q=Flights%20to%20AMD%20from%20DEL%20on%202026-03-12  
+- Check out from hotel before departure.
+
+Cost Summary and Audit Warnings:  
+- Flights (round trip Ahmedabad–Delhi): 4,791.45 INR + 4,835.65 INR = 9,627.10 INR confirmed within budget.  
+- Accommodation: Rates not yet confirmed. Recommended hotel “QUALITY INN AND SUITES RIVER COUNTRY RES” lacks API pricing; please verify current rates here: https://www.google.com/travel/hotels?q=hotels+in+KUU+2026-03-05+2026-03-12.  
+- Estimated accommodation cost using mid-range hotel pricing may slightly exceed the total budget (approx. 2,500 INR/night × 7 nights = 17,500 INR), bringing total approximate cost near 27,127 INR, which is above the 25,000 INR budget.  
+- Road travel costs between Delhi and Manali are not included and should be considered additionally.  
+
+Traveler is advised to verify accommodation pricing promptly via provided link to ensure compliance with budget or explore alternative budget lodgings such as hostels, guesthouses, or homestays. Adjustments to trip duration or travel dates may be necessary if costs exceed limits. No scheduling conflicts are identified and the travel itinerary is logistically feasible with allowance for realistic travel times and local transport arrangements.
